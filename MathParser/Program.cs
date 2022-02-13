@@ -3,16 +3,16 @@
     public static void Main()
     {
         bool verbose = false;
-        bool caseSensitive = false;
         bool shoudEvaluate = false;
+        List<char> postfix = new();
         Dictionary<char, double> variables = new();
-        Func<string, bool, List<char>> convert = Parser.ToPostfix;
+        Func<string, List<char>> convert = Parser.ToPostfix;
         Func<IList<char>, Dictionary<char, double>, double> evaluate = Parser.Evaluate;
 
-        Console.WriteLine($"[INFO] {(caseSensitive ? "case sensitive" : "not case sensitive")}");
         Console.WriteLine($"[INFO] verbose mode is {(verbose ? "on" : "off")}");
         Console.WriteLine($"[INFO] {(shoudEvaluate ? "expression will be evaluated after parsing" : "expression won't be evaluated after parsing")}");
-        Console.WriteLine("[INFO] Commands: '-v' for verbose mode, '-c' for case sensivity, '-e' for evaluating, '-?' for help, '-setvalues', '-values'\n[INFO] Type ! to exit programm or stop entering variables");
+        Console.WriteLine("[INFO] Commands: '-v' for verbose mode, '-ae' for auto-evaluating, -e to evaluate last expression, '-?' for help, '-setvalues', '-values'");
+        Console.WriteLine("[INFO] Type ! to exit programm or stop entering variables");
         Console.WriteLine("--------------------------------------\n");
 
         while (true)
@@ -24,7 +24,8 @@
                 break;
             else if (s == "-?")
             {
-                Console.WriteLine("[INFO] Avaliabble commands: -v, -c, -e, -setvalues, -values, -?\n[INFO] Type ! to exit\n");
+                Console.WriteLine("[INFO] Commands: '-v' for verbose mode, '-ae' for auto-evaluating, -e to evaluate last expression, '-?' for help, '-setvalues', '-values'");
+                Console.WriteLine("[INFO] Type ! to exit programm or stop entering variables");
                 continue;
             }
             else if (s.ToLower() == "-v")
@@ -37,13 +38,7 @@
                     Console.WriteLine("[INFO] labels: [Lt] - letter, [OB] - opening bracket, [CB] - closing bracket, [Op] - operator, [Fl] - stack flushing\n");
                 continue;
             }
-            else if (s.ToLower() == "-c")
-            {
-                caseSensitive = !caseSensitive;
-                Console.WriteLine($"[INFO] {(caseSensitive ? "case sensitive" : "not case sensitive")} now\n");
-                continue;
-            }
-            else if (s.ToLower() == "-e")
+            else if (s.ToLower() == "-ae")
             {
                 shoudEvaluate = !shoudEvaluate;
                 Console.WriteLine($"[INFO] {(shoudEvaluate ? "expression will be evaluated after parsing" : "expression won't be evaluated after parsing")}\n");
@@ -60,17 +55,16 @@
                 Console.WriteLine($"All values: [ {DictToString(variables)}]\n");
                 continue;
             }
-
             try
             {
-                if (!shoudEvaluate)
-                    Console.WriteLine($"Postfx:\t{string.Join("", convert(s, caseSensitive))}");
+                if (s.ToLower() == "-e")
+                    Console.WriteLine($"Result:\t{evaluate(postfix, variables)}");
                 else
                 {
-                    
-                    var postfix = convert(s, caseSensitive);
+                    postfix = convert(s);
                     Console.WriteLine($"Postfx:\t{string.Join("", postfix)}");
-                    Console.WriteLine($"Result:\t{evaluate(postfix, variables)}");
+                    if (shoudEvaluate)
+                        Console.WriteLine($"Result:\t{evaluate(postfix, variables)}");
                 }
             }
             catch (Parser.WrongSymbolException e)
@@ -112,7 +106,7 @@
         {
             lines++;
             Console.Write(">>> ");
-            string s = Console.ReadLine();
+            string s = Console.ReadLine().ToUpper();
             if (s == "!")
                 break;
 

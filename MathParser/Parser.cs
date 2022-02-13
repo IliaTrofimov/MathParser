@@ -5,6 +5,19 @@
         public EvaluatingException(string msg): base(msg) { }
     }
 
+    public class MathException : EvaluatingException
+    {
+        public double Left, Right;
+        public char Operator;
+        public MathException(string err, double left, double right, char op) : 
+            base($"Cannot execute {left}{op}{right} ({err})") 
+        {
+            Left = left; ;
+            Right = right;
+            Operator = op;
+        }
+    }
+
     public class ParsingException : Exception
     {
         public string Expression;
@@ -72,7 +85,7 @@
     };
 
 
-    public static List<char> ToPostfix(string expr, bool caseSensitive = false)
+    public static List<char> ToPostfix(string expr)
     {
         Stack<char> stack = new();
         List<char> result = new();
@@ -87,7 +100,7 @@
                 if (i != (expr.Length - 1) && char.IsLetter(expr[i + 1]))
                     throw new SyntaxException(expr, "Variables' names must contain only one latin symbol", i);
 
-                result.Add(caseSensitive ? expr[i] : char.ToUpper(expr[i]));
+                result.Add(char.ToUpper(expr[i]));
             }
 
             else if (expr[i] == '(')           // Открывающая скобка, кладём её в стек
@@ -127,7 +140,7 @@
         return result;
     }
 
-    public static List<char> ToPostfixVerbose(string expr, bool caseSensitive = false)
+    public static List<char> ToPostfixVerbose(string expr)
     {
         Stack<char> stack = new();
         List<char> result = new();
@@ -143,7 +156,7 @@
                 if (i != (expr.Length - 1) && char.IsLetter(expr[i + 1]))
                     throw new SyntaxException(expr, "Variables' names must contain only one latin symbol", i);
 
-                result.Add(caseSensitive ? expr[i] : char.ToUpper(expr[i]));
+                result.Add(char.ToUpper(expr[i]));
                 Console.WriteLine($"  [Lt] i={i}\tres='{string.Join("", result)}'\tstk=[{string.Join(", ", stack)}]");
             }
 
@@ -207,7 +220,11 @@
             {
                 double right = values.Pop();
                 double left = values.Pop();
-                values.Push(Execute(left, right, token));
+                double res = Execute(left, right, token);
+                if (!double.IsFinite(res))
+                    throw new MathException("indeterminate", left, right, token);
+                
+                values.Push(res);
             }
             else 
                 throw new EvaluatingException($"Cannot evaluate expression, unacceptable symbol '{token}' found");
@@ -235,6 +252,9 @@
                 double right = values.Pop();
                 double left = values.Pop();
                 double res = Execute(left, right, token);
+                if (!double.IsFinite(res))
+                    throw new MathException("indeterminate", left, right, token);
+                
                 values.Push(res);
                 Console.WriteLine($"  [Op] values=[{string.Join(", ", values)}]\t  oper='{token}'\taction: {left} {token} {right} = {res}");
             }
