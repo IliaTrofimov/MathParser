@@ -120,6 +120,9 @@
 
             else if (Operators.Contains(expr[i]))   // Операторы
             {
+                if (i == (expr.Length - 1) || Operators.Contains(expr[i + 1]))
+                    throw new SyntaxException(expr, "unexpected operator", i);
+
                 while ((stack.Count != 0) && GetOrder(expr[i]) <= GetOrder(stack.Peek()))
                 {
                     char ch = stack.Pop();
@@ -181,6 +184,9 @@
             {
                 while ((stack.Count != 0) && GetOrder(expr[i]) <= GetOrder(stack.Peek()))
                 {
+                    if (i == (expr.Length - 1) || Operators.Contains(expr[i + 1]))
+                        throw new SyntaxException(expr, "unexpected operator", i);
+
                     char ch = stack.Pop();
                     if (ch != '(' && ch != ')') result.Add(ch);
                 }
