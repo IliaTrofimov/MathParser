@@ -79,6 +79,7 @@
 
     public static int GetOrder(char op) => op switch
     {
+        '^' => 3,
         '*' or '/' => 2,
         '+' or '-' => 1,
         _ => -1,
@@ -273,6 +274,7 @@
 
     private static double Execute(double left, double right, char op) => op switch
     {
+        '^' => Math.Pow(left, right),
         '*' => left * right,
         '/' => left / right,
         '+' => left + right,
