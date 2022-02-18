@@ -2,16 +2,17 @@
 {
     public class ParserToken
     {
-        public string Token;
+        public readonly string Token;
         public readonly int Order;
         public readonly bool Executable;
         public virtual double Eval(params double[] args) => throw new NotImplementedException();
         public override string ToString() => Token;
+
         public static implicit operator string(ParserToken t) => t.Token;
 
         public ParserToken(string token, int order = -1, bool executable = false)
         {
-            Token = token;
+            Token = token.ToUpper();
             Executable = executable;
             Order = order;
         }
@@ -22,7 +23,6 @@
         public double Value;
         public override double Eval(params double[] args) =>
             double.IsNaN(Value) ? throw new Parser.EvaluatingException($"Cannot evaluate expression, '{Token}' is not defined") : Value;
-        public override string ToString() => $"{Token}={Value}";
 
         public static implicit operator double(Variable v) => v.Value;
 
@@ -30,6 +30,18 @@
         {
             Value = value;
         }
+    }
+
+    public class Constant : Variable
+    {
+        public override double Eval(params double[] args) => Value;
+
+        public Constant(double value) : base("_", value)
+        {
+            Value = value;
+        }
+
+        public override string ToString() => $"'{Value:F2}'";
     }
 
     public class BinaryOperator : ParserToken
