@@ -1,6 +1,7 @@
-﻿class Program
+﻿using MathParser;
+
+class Program
 {
-    // for Expression class
     public static void Main()
     {
         bool verbose = false;
@@ -12,11 +13,11 @@
         Console.WriteLine("[INFO] Commands: '-v' for verbose mode, '-ae' for auto-evaluating, -e to evaluate last expression, '-?' for help,");
         Console.WriteLine("\t'-set <name>=<value>' to set value, '-values' to see all variables");
         Console.WriteLine("[INFO] Type ! to exit programm or stop entering variables");
-        Console.WriteLine("--------------------------------------\n");
+        Console.WriteLine("--------------------------------------");
 
         while (true)
         {
-            Console.Write("Input:\t");
+            Console.Write("\nInput:\t");
             string s = Console.ReadLine();
 
             if (s is null || s == "!")
@@ -44,7 +45,7 @@
             else if (s.ToLower() == "-ae")
             {
                 shoudEvaluate = !shoudEvaluate;
-                Console.WriteLine($"[INFO] Expression {(shoudEvaluate ? "will" : "won't")} be evaluated after parsing\n");
+                Console.WriteLine($"[INFO] Expression {(shoudEvaluate ? "will" : "won't")} be evaluated after parsing");
                 continue;
             }
             else if (s.ToLower() == "-values")
@@ -77,32 +78,26 @@
                         Console.WriteLine($"Result:\t{expression.Evaluate()}");
                 }
             }
-            catch (Parser.WrongSymbolException e)
+            catch (WrongSymbolException e)
             {
                 Console.WriteLine("[ERROR] Wrong symbol");
                 Console.WriteLine("\t" + e.Message);
             }
-            catch (Parser.SyntaxException e)
+            catch (SyntaxException e)
             {
                 Console.WriteLine("[ERROR] Syntax error");
                 Console.WriteLine("\t" + e.Message);
             }
-            catch (Parser.ParsingException e)
+            catch (ParsingException e)
             {
                 Console.WriteLine("[ERROR] Parsing error");
                 Console.WriteLine("\t" + e.Message);
             }
-            catch (Parser.EvaluatingException e)
+            catch (EvaluatingException e)
             {
                 Console.WriteLine("[ERROR] Evaluating error");
                 Console.WriteLine("\t" + e.Message);
             }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERROR] Undefined error");
-                Console.WriteLine("\t" + e.Message);
-            }
-            Console.WriteLine();
         }
     }
 }

@@ -1,80 +1,5 @@
 ﻿using MathParser;
 
-
-public class EvaluatingException : Exception
-{
-    public EvaluatingException(string msg) : base(msg) { }
-}
-
-public class MathException : EvaluatingException
-{
-    public double Left, Right;
-    public string Operator;
-    public MathException(string err, double left, double right, string op) :
-        base($"Cannot execute {left}{op}{right} ({err})")
-    {
-        Left = left; ;
-        Right = right;
-        Operator = op;
-    }
-}
-
-public class ParsingException : Exception
-{
-    public string Expression;
-
-    public ParsingException(string expr) : base($"Cannot parse '{expr}'")
-    {
-        Expression = expr;
-    }
-
-    public ParsingException(string expr, string msg) : base(msg)
-    {
-        Expression = expr;
-    }
-}
-
-public class WrongSymbolException : ParsingException
-{
-    public int Position;
-    public char FailedChar;
-
-    public WrongSymbolException(string expr, int pos) :
-        base(expr, $"Cannot parse '{expr}': unacceptable character '{expr[pos]}' found at position {pos}")
-    {
-        FailedChar = expr[pos];
-        Position = pos;
-    }
-
-    public WrongSymbolException(string expr, char failed) :
-        base(expr, $"Cannot parse '{expr}': unacceptable character '{failed}' found in expression")
-    {
-        Position = expr.IndexOf(failed);
-        FailedChar = failed;
-    }
-}
-
-public class SyntaxException : ParsingException
-{
-    public int Position;
-    public string SyntaxError;
-
-    public SyntaxException(string expr, string error, int pos) :
-        base(expr, $"Cannot parse '{expr}': {error} (at position {pos})")
-    {
-        SyntaxError = error;
-        Position = pos;
-    }
-
-    public SyntaxException(string expr, string error) :
-        base(expr, $"Cannot parse '{expr}': {error}")
-    {
-        SyntaxError = error;
-        Position = -1;
-    }
-}
-
-
 class Expression
 {
     private enum TokenType { None, Variable, Constant, Operator, BracketO, BracketC };
@@ -167,14 +92,16 @@ class Expression
         {
             if (char.IsWhiteSpace(exprInf[i]))
                 continue;
-            else if (char.IsDigit(exprInf[i]))
+            else if (char.IsDigit(exprInf[i]) || exprInf[i] == '.' || exprInf[i] == ',')
             {
                 if (last == TokenType.BracketC)
+                    throw new WrongSymbolException(exprInf, i);
+                if (last == TokenType.Variable && exprInf[i] == '.' || exprInf[i] == ',')
                     throw new WrongSymbolException(exprInf, i);
                 else if (last != TokenType.Variable)
                     last = TokenType.Constant;
 
-                token += exprInf[i];
+                token += (exprInf[i] == '.' ? ',' : exprInf[i]);
                 if (Verbose) Console.WriteLine($"  [Dt] i={i}\tres='{Postfix}'\tstk=[{string.Join(", ", stack)}]");
             }
             else if (char.IsLetter(exprInf[i]))
@@ -202,7 +129,7 @@ class Expression
 
                 pushOperand();
                 while (stack.Count != 0 && stack.Peek() != "(")
-                    postfix.Add(stack.Peek().Executable ? stack.Pop() as BinaryOperator : stack.Pop() as Variable);
+                    postfix.Add(stack.Pop());
 
                 if (stack.Count == 0)
                     throw new SyntaxException(exprInf, "closing and opening brackets do not match");
@@ -221,7 +148,22 @@ class Expression
                 {
                     ParserToken t = stack.Pop();
                     if (t != "(" && t != ")") 
-                        postfix.Add(t as BinaryOperator);
+                        postfix.Add(t);
+                }
+                stack.Push(op);
+                if (Verbose) Console.WriteLine($"  [Op] i={i}\tres='{Postfix}'\tstk=[{string.Join(", ", stack)}]");
+            }
+            else if (last != TokenType.Operator)
+            {
+                pushOperand();
+                last = TokenType.Operator;
+                UnaryOperator op = UnaryOperator.SelectOperator(exprInf[i]);
+
+                while ((stack.Count != 0) && op.Order <= stack.Peek().Order)
+                {
+                    ParserToken t = stack.Pop();
+                    if (t != "(" && t != ")")
+                        postfix.Add(t);
                 }
                 stack.Push(op);
                 if (Verbose) Console.WriteLine($"  [Op] i={i}\tres='{Postfix}'\tstk=[{string.Join(", ", stack)}]");
@@ -254,12 +196,19 @@ class Expression
 
         foreach (ParserToken token in postfix)
         {
-            if (!token.Executable)
+            if (token.Arguments == 0)
             {
-                values.Push((token as Variable).Eval());
+                values.Push(token.Eval());
                 if (Verbose) Console.WriteLine($"  [Va] stk=[{string.Join(", ", values)}]\t{token}->{token.Eval()}");
             }
-            else
+            else if (token.Arguments == 1)
+            {
+                double val = values.Pop();
+                double res = token.Eval(val);
+                values.Push(res);
+                if (Verbose) Console.WriteLine($"  [Ex] stk=[{string.Join(", ", values)}]\t{token}{val}={res}");
+            }
+            else if (token.Arguments == 2)
             {
                 double right = values.Pop();
                 double left = values.Pop();
